@@ -1,0 +1,76 @@
+---
+title: "Homework1"
+author: "Douglas Barley"
+date: "8/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Overview and first look at the data
+
+The FiveThirtyEight article "Voter Registrations Are Way, Way Down During The Pandemic" <https://fivethirtyeight.com/features/voter-registrations-are-way-way-down-during-the-pandemic/>, published June 26, 2020, by Kaleigh Rogers and Nathaniel Rakich, compares new voter registrations in the spring of 2020 to the same period from 2016. Looking at both periods, which are typically busy during the run-up to a Presidential election, there is an apparent decline in the number of new registrations in 2020 over the comparison period.
+
+The raw data is available on GitHub <https://github.com/fivethirtyeight/data/tree/master/voter-registration> and was imported to R for further analysis. The data covers January through April for new registrations in both 2016 and 2020 for 11 states and the District of Columbia, and structure of the dataset is shown below:
+
+```{r voterReg}
+gitURL <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/voter-registration/new-voter-registrations.csv"
+voterReg <- read.csv(gitURL)
+str(voterReg)
+```
+
+### Munging the data for analysis
+
+In order to sort the data by month properly, each month will need to be converted to an integer. Next, since the Year variable holds both 2016 and 2020 data, it will be helpful to separate the New registrations into two separate variables, one for 2016 new registration and one for 2020 new registrations. This will make it visually easier to see side-by-side comparisons in the data table, and will allow for a simple calculated variable showing the delta between 2016 new registrations and 2020 new registrations in each state for each month reported. The results of these data transformations are stored in a subsetted data frame.
+
+```{r subsetVoterReg,message=FALSE}
+library(dplyr)
+
+monthName <- c(voterReg$Month)
+numMonth <- sapply(monthName, switch, "Jan" = 1, "Feb" = 2, "Mar" = 3, "Apr" = 4, "May" = 5)
+voterReg$numMonth <- numMonth
+
+newReg2016 <- voterReg$New.registered.voters[which(voterReg$Year == 2016)]
+newReg2016
+newReg2020 <- voterReg$New.registered.voters[which(voterReg$Year == 2020)]
+newReg2020
+newRegDelta <- newReg2020 - newReg2016
+newRegDelta
+
+subsetVoterReg <- data.frame(distinct(voterReg, Jurisdiction, Month, numMonth),newReg2016,newReg2020,newRegDelta)
+subsetVoterReg
+```
+
+Visually explore the data by faceting graphs for each jurisdiction. Display 2016 data points in red and 2020 data points in blue over a numeric representation of each month, which keeps the months in proper order. 
+
+```{r comparisonGraph}
+library(ggplot2)
+
+Cfgraph <- ggplot(subsetVoterReg) + geom_line(aes(x = numMonth , y = newReg2016), color = "red") + geom_line(aes(x = numMonth , y = newReg2020), color = "blue") + xlab('Month') + ylab('New.Registrations') + facet_wrap(~Jurisdiction) + labs(title = "Comparison of 2016 to 2020 New Voter Registrations")
+print(Cfgraph)
+
+```
+
+Also graph the net change in new voter registrations for each jurisdiction over each month.
+
+```{r netChangeGraph}
+
+Netgraph <- ggplot(subsetVoterReg, aes(x = numMonth , y = newRegDelta)) + geom_line() + xlab('Month') + ylab('Net.Change.in.New.Registrations') + facet_wrap(~Jurisdiction) + labs(title = "Net Change of 2016 to 2020 New Voter Registrations")
+print(Netgraph)
+```
+
+### Conclusions
+
+Based on the comparisons of 2016 to 2020 data, it appears that California, Florida, Illinois and Texas saw the largest drops in new voter registrations during the spring registrations prior to the Presidential elections. Given that the reported data reflects discrete new voter registrations by month, we could verify which states had the largest net total Deltas by adding the net Deltas across each state for the given time period. In fact, let's do so:
+
+```{r netChangeByJurisdiction,message=FALSE}
+library(data.table)
+DT <- data.table(subsetVoterReg)
+setkey(DT, Jurisdiction)
+aggregate(newRegDelta ~ Jurisdiction, subsetVoterReg, sum)
+```
+
+Here we can see clearly that aggregated new voter registrations across the four or five months of data have most adversely impacted Texas, Illinois, Virginia, and Arizona. The large net gain in California's reflects that more people registered even earlier in 2020 than they did in 2016, which can be seen in the first faceted visualization. Overall, it is clear that the pandemic did indeed decrease new registrations overall across most of the states studied. It would be interesting to see if there is a correlation with the larger registration declines against the attempts to properly socially distance to control the virus within each state.
+
