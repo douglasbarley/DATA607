@@ -1,0 +1,37 @@
+# Movies database for movies survey assignment
+
+CREATE SCHEMA movies;
+
+USE movies;
+
+CREATE TABLE surveyresults 
+	(
+    Responder int NOT NULL
+    , TheKingsSpeech char(3) NULL
+    , TheWizardOfOz char(3) NULL
+    , AvengersEndGame char(3) NULL
+    , Parasite char(3) NULL
+    , TheNotebook char(3) NULL
+    , TheBluesBrothers char(3) NULL
+    );
+
+select * from surveyresults;
+
+/* this next script did not work for me, so I ended up using the Table Data Import Wizard */
+
+LOAD DATA INFILE 'C:/data/Week-2-Movie-Survey.csv' 
+INTO TABLE surveyresults
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+(Responder, @TheKingsSpeech, @TheWizardOfOz, @AvengersEndGame, @Parasite, @TheNotebook, @TheBluesBrothers)
+SET
+TheKingsSpeech = nullif(@TheKingsSpeech,-1),
+TheWizardOfOz = nullif(@TheWizardOfOz,-1),
+AvengersEndGame = nullif(@AvengersEndGame,-1),
+Parasite = nullif(@Parasite,-1),
+TheNotebook = nullif(@TheNotebook,-1),
+TheBluesBrothers = nullif(@TheBluesBrothers,-1)
+;
+
+CREATE USER 'professor' IDENTIFIED BY 'password123456' ;
