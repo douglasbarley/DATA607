@@ -65,7 +65,7 @@ for (i in 1:nrow(OppNum)){
 head(OppNum)
 ```
 
-Last we average each player's opponents' average scores across all rounds that were played. The easiest way to do this appears to be using aggregation in a data table.
+Then we average each player's opponents' pre-Rating scores across all rounds that were played. The easiest way to do this appears to be using aggregation in a data table.
 
 ```{r}
 # aggregate the averages in a data table
@@ -76,7 +76,7 @@ colnames(AvgOppRtg) <- c('PairNum','AvgOppPreRating')
 head(AvgOppRtg)
 ```
 
-Finally, with the averages of each player's opponents availabe, we merge that data into the players data frame as the last column.
+Finally, with the average of each player's opponents in hand, we merge that data into the players data frame as the last column.
 
 ```{r}
 # merge the two data sets
@@ -85,14 +85,14 @@ playersall <- merge(players,AvgOppRtg)
 head(playersall)
 ```
 
-All that is left to do is export the results to a .csv file. Since we do not need to export the PairNum column we will set it to null.
+All that is left to do is export the results to a .csv file, but since we do not need to export the PairNum column we will first set it to null.
 
 ```{r warning=FALSE}
 # remove the PairNum column
 playersall$PairNum = NULL
 
 # export the file
-write.csv(playersall, file = "players.csv", sep = ",",row.names = FALSE)
+write.csv(playersall, file = "players.csv", sep = ",", row.names = FALSE)
 ```
 
 The file called "players.csv" should now be in your local Documents folder.
