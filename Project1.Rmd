@@ -1,0 +1,99 @@
+---
+title: "DATA 607 - Project 1"
+author: "Douglas Barley"
+date: "9/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(data.table)
+```
+
+### Chess Tournament Stats
+
+For this project I saved the original .txt file as an .xlsx file and used the built-in "Text to Columns" feature to quickly separate data into its respective columns. All of the Excel transformations only took about 20 minutes start to finish.
+
+Then I saved the transformed data as a tab delimited text file called tournamentinfo2.txt and placed it in my GitHub repository <a href="https://raw.githubusercontent.com/douglasbarley/DATA607/master/tournamentinfo2.txt">here</a>. For comparison purposes both datasets were imported into R and saved respectively as chess and chess2. The latter was used for the pursuant transformations.
+
+```{r messages=FALSE}
+fileURL <- "https://raw.githubusercontent.com/douglasbarley/DATA607/master/tournamentinfo.txt"
+chess <- read.delim(fileURL, header = TRUE)
+
+fileURL2 <- "https://raw.githubusercontent.com/douglasbarley/DATA607/master/tournamentinfo2.txt"
+chess2 <- read.delim(fileURL2, header = TRUE, sep = "\t")
+```
+
+Most of the basic data about each player is relatively easy to obtain from the transformed data, as shown in the sample below.
+
+```{r}
+players <- subset(chess2, select = c(as.integer(PairNum), PlayerName, State, TotalPts, PreRtg))
+head(players)
+```
+
+But calculating the average rating of each player's opponents is a multi-step process. First we create a data frame displaying each player's opponents' Pair Number for each round of the tournament.
+
+```{r}
+R1opp <- as.integer(trimws(substring(chess2$Round1,4,5))) # each player's opponent for round 1
+R2opp <- as.integer(trimws(substring(chess2$Round2,4,5))) # each player's opponent for round 2
+R3opp <- as.integer(trimws(substring(chess2$Round3,4,5))) # each player's opponent for round 3
+R4opp <- as.integer(trimws(substring(chess2$Round4,4,5))) # each player's opponent for round 4
+R5opp <- as.integer(trimws(substring(chess2$Round5,4,5))) # each player's opponent for round 5
+R6opp <- as.integer(trimws(substring(chess2$Round6,4,5))) # each player's opponent for round 6
+R7opp <- as.integer(trimws(substring(chess2$Round7,4,5))) # each player's opponent for round 7
+
+Opponents <- data.frame(chess2$PairNum, R1opp, R2opp, R3opp, R4opp, R5opp, R6opp, R7opp)
+
+colnames(Opponents) <- c('PairNum','1','2','3','4','5','6','7')
+
+head(Opponents)
+```
+
+Next we pivot the data frame so that each player's opponents are listed for each played round as a single vector, dropping all NA values (i.e. blanks where there was no match for a given round).  Then we look up each opponent's preliminary rating for each round.
+
+```{r warning=FALSE}
+# pivot the data frame "long-wise"
+OppNum <- Opponents %>%
+  pivot_longer(`1`:`7`, names_to = "Round", values_to = "Opp", values_drop_na = TRUE)
+
+# look up the opponent's pre-rating using their PairNum as an index
+for (i in 1:nrow(OppNum)){
+  OppNum$OppPreRtg[i] <- players$PreRtg[which(OppNum$Opp[i] == players$PairNum)]
+}
+
+head(OppNum)
+```
+
+Last we average each player's opponents' average scores across all rounds that were played. The easiest way to do this appears to be using aggregation in a data table.
+
+```{r}
+# aggregate the averages in a data table
+AvgOppRtg <- data.table(round(aggregate(OppPreRtg ~ PairNum, OppNum, mean), digits = 0))
+
+colnames(AvgOppRtg) <- c('PairNum','AvgOppPreRating')
+
+head(AvgOppRtg)
+```
+
+Finally, with the averages of each player's opponents availabe, we merge that data into the players data frame as the last column.
+
+```{r}
+# merge the two data sets
+playersall <- merge(players,AvgOppRtg)
+
+head(playersall)
+```
+
+All that is left to do is export the results to a .csv file. Since we do not need to export the PairNum column we will set it to null.
+
+```{r warning=FALSE}
+# remove the PairNum column
+playersall$PairNum = NULL
+
+# export the file
+write.csv(playersall, file = "players.csv", sep = ",",row.names = FALSE)
+```
+
+The file called "players.csv" should now be in your local Documents folder.
+
