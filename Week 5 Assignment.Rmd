@@ -1,0 +1,121 @@
+---
+title: "Week 5 Assignment"
+author: "Douglas Barley"
+date: "9/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(naniar)
+library(ggplot2)
+```
+
+### Importing and Preparing Data
+
+This script reads the flight delays CSV file in "wide" data structue from my <a href="https://raw.githubusercontent.com/douglasbarley/DATA607/master/Week%205%20-%20Arrival%20Delays.csv">GitHub repo</a> into R.
+
+```{r}
+gitURL <- "https://raw.githubusercontent.com/douglasbarley/DATA607/master/Week%205%20-%20Arrival%20Delays.csv"
+delays <- read.csv(gitURL)
+
+names(delays) <- c("Airline","status","LAX","PHX","SAN","SFO","SEA")
+
+delays
+```
+
+### Tidying with Tidyr and Naniar functions
+
+First pivot longer to move the columns for each respective destination into a single "Dest" column and the numbers of on time and delayed flights into a "count" column. Replace "" with NA in the Airline column, and then fill values forward to replace the NAs.
+
+```{r}
+delays2 <- delays %>%
+  pivot_longer(`LAX`:`SEA`, names_to = "Dest", values_to = "count", values_drop_na = TRUE) %>%
+  replace_with_na_all(condition = ~.x == "") %>%  # replace all "" values with NA
+  fill(Airline)                                   # fill values forward in the Airline column
+
+delays2$status <- sub(" ", "_", delays2$status)
+
+delays2
+```
+
+Then pivot wider to make separate columns for the "on time" and "delayed" variables and their respective values.
+
+```{r}
+delays3 <- delays2 %>%
+  pivot_wider(names_from = status, values_from = count)
+
+delays3
+```
+
+### Transforming with Dplyr
+
+Create new variables using `mutate()` for total flights, percent of on time flights, and delayed flights per city.
+
+```{r}
+delays3 <- mutate(delays3, 
+                  TotalPerCity = on_time + delayed,
+                  OnTimePct = on_time / TotalPerCity,
+                  DelayPct = delayed / TotalPerCity)
+
+delays3
+```
+
+Make a copy of the dataset to show aggregates per airline. Remove the specific Destination data, group by Airline and use `summarise()` to compare overall airline performance by collapsing totals to a single line per airline. Once the sums are summarized, add % of on-time flights and % of delayed flights per Airline.
+
+```{r message=FALSE}
+delaysSummary <- delays3
+
+delaysSummary <- mutate(delaysSummary,
+                    Dest = NULL) %>%
+  group_by(Airline) %>%
+  summarise(ot = sum(on_time), del = sum(delayed), tot_flt = sum(TotalPerCity))
+
+delaysSummary <- mutate(delaysSummary, 
+                  Pct_OnTime = ot / tot_flt,
+                  Pct_Delay = del / tot_flt)
+delaysSummary
+```
+
+### Data Analysis
+
+With per city and overall airline performance data ready, it's time to visualize the data!
+
+Comparing the per-city on-time performance as a percentage for both airlines, the data appears similar in shape for each city. Phoenix flights arrive on time the most, and San Francisco flights are least on time as a percentage. The visual impression is that Alaska airlines slightly edges out American West with a higher percentage of on time flights for every individual destination.
+
+```{r}
+ggplot(delays3, aes(x = Dest)) + geom_col(aes(y = OnTimePct), fill = "light blue") + xlab("destinations") + ylab("% on time flights") + facet_wrap(~Airline) + labs(title = "Percent on time flights per destination by airline")
+```
+
+
+Comparing the overall on-time performance as a percentage for both airlines, it is interesting to note that overall American West appears to have a higher percentage of on time flights. It is plain in the data that American West is on time overall 89.1% of the time compared to Alaska's 86.7% on time rate.
+
+```{r}
+ggplot(delaysSummary, aes(x = Airline)) + geom_col(aes(y = Pct_OnTime), fill = "turquoise") + ylab("% on time flights") + labs(title = "Percent on time flights by airline")
+```
+
+There appears to be a disconnect between the per city on time rates and the overall on time rates for the airlines. If one airline, Alaska, has a greater per city on time rate for every city would it not make sense that they have an overall better on time rate? In order to answer that it begs that we dig in a little further.
+
+We know the comparative statistics, but what if we look at the raw volumes of flights to each destination per airline?
+
+```{r}
+ggplot(delays3, aes(x = Dest)) + geom_col(aes(y = on_time), fill = "light blue") + xlab("destinations") + ylab("# on time flights") + facet_wrap(~Airline) + labs(title = "# on time flights per destination by airline")
+```
+
+Look at how many more flights Am West has on time going to Phoenix!
+
+So what about overall volumes for the airlines?
+
+```{r}
+ggplot(delaysSummary, aes(x = Airline)) + geom_col(aes(y = ot), fill = "turquoise") + ylab("# on time flights") + labs(title = "# on time flights by airline")
+```
+
+Am West has almost twice the volume of on time flights overall!
+
+### Conclusion
+
+With almost twice the number of flights, Am West airlines has more room to have delays per city while maintaining an overall superior on time rate over its competitors that fly smaller quantities of flights. Am West maintained an overall on time rate of 89.1%, which was 6438 out of 7225 flights that were on time.  Its competitor, Alaska Air, maintained an overall on time rate of 86.7% or 3274 out of 3775 flights.
+
+In order for Am West to drop to equal its peer with an 86.7% on time rate, it could afford to not be on time for an additional 174 flights, or only 6264 flights being on time. Paradoxically then, it appears that the more frequently you fly the more frequently you can be late without significantly impacting your on time arrival statistics.
+
