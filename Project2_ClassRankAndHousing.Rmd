@@ -1,0 +1,65 @@
+---
+title: "DATA 607 - Project 2"
+author: "Douglas Barley, Rachel Greenlee, and Antina Karim"
+date: "10/3/2020"
+output:
+  html_document: default
+  word_document: default
+  always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(naniar)
+```
+
+### Class Rank and Housing Choice
+
+For this project we made a .csv file from the image posted in Week 5 by Donghwan Kim and saved it to my GitHub repo <a href="https://raw.githubusercontent.com/douglasbarley/DATA607/master/ClassRankAndHousing.csv">here</a>. The .csv file was imported into R and saved as a data frame called RankHousing.
+
+```{r messages=FALSE}
+fileURL <- "https://raw.githubusercontent.com/douglasbarley/DATA607/master/ClassRankAndHousing.csv"
+RankHousing <- read.csv(fileURL, header = TRUE)
+
+names(RankHousing) <- c("State_of_residence","Remove_column","Class_rank","Off_campus","On_campus","Total")
+
+glimpse(RankHousing)
+```
+
+## Tidying the data
+
+We wanted to remove unnecessary rows and columns from the table, fill missing values forward with the values that are already in the table for state of residence, and pivot the table longer to make the housing choice a single column with two possible values (off campus, on campus). All numbers are stacked in a single "count" column.
+
+```{r}
+RankHousing <- RankHousing[-c(1,4,7,8,9,10),] %>% # remove unnecessary rows
+  select(!c(Remove_column)) %>%                   # remove unnecessary column
+  replace_with_na_all(condition = ~.x == "") %>%  # replace null strings with NA values
+  fill(State_of_residence) %>%                    # forward fill values into NA values
+  mutate(Off_campus = as.integer(Off_campus),
+         On_campus = as.integer(On_campus),
+         Total = as.integer(Total)) %>%
+  pivot_longer(`Off_campus`:`On_campus`, names_to = "Housing_pref", values_to = "Num", values_drop_na = TRUE)
+
+RankHousing$State_of_residence <- sub(" ", "_", RankHousing$State_of_residence) # run for first space in the values
+RankHousing$State_of_residence <- sub(" ", "_", RankHousing$State_of_residence) # rerun for second space in the values
+
+
+RankHousing <- RankHousing %>%
+  select(State_of_residence,Class_rank,Housing_pref,Num,Total) %>%
+  mutate(RankHousing, Pct = Num / Total)
+
+RankHousing
+```
+
+## Analysis of housing choice by class rank
+
+We want to analyze the change in a student's housing choice by residency status as class rank increases. So we should visualize the changes from underclassman housing preferences to upperclassman housing preferences.
+
+```{r}
+ggplot(RankHousing) + geom_col(aes(x= State_of_residence, y = Num, fill = Housing_pref)) + facet_wrap(~Class_rank)
+```
+
+## Conclusion
+
+In terms of raw numbers we see that in-state underclassmen have a greater preference for living off campus than out-of-state underclassmen, while at the upperclassman level there appears to be a roughly equal preference for living off campus. The data table confirms that 34.5% of in-state underclassmen would prefer to live off campus compared to 30.2% of out-of-state underclassmen. The table also confirms that 93.9% of in-state upperclassmen and 95.1% of out-of-state upperclassmen would prefer to live off campus.
