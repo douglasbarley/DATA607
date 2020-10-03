@@ -1,6 +1,6 @@
 ---
 title: "DATA 607 - Project 2"
-author: "Douglas Barley, Rachel Greenlee, and Antina Karim"
+author: "Douglas Barley, Rachel Greenlee, and Atina Karim"
 date: "10/3/2020"
 output:
   html_document: default
