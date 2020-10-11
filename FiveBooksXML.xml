@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.0//EN" 
+  "http://www.w3.org/TR/xhtml-basic/xhtml-basic10.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Five Books XML document</title>
+</head>
+<body>
+	<references>
+		<book>
+			<title>Title</title>
+			<authors>Authors</authors>
+			<publisher>Publisher</publisher>
+			<publicationdate>PublicationDate</publicationdate>
+			<url>URL</url>
+		</book>
+
+		<book>
+			<title>R for Data Science</title>
+			<authors>Garrett Grolemund and Hadley Wickham</authors>
+			<publisher>O’Reilly</publisher>
+			<publicationdate>2017</publicationdate>
+			<url>http://r4ds.had.co.nz/</url>
+		</book>
+
+		<book>
+			<title>Text Mining with R: A Tidy Approach</title>
+			<authors>Julia Silge and David Robinson</authors>
+			<publisher>O’Reilly</publisher>
+			<publicationdate>2017</publicationdate>
+			<url>None</url>
+		</book>
+
+		<book>
+			<title>Data Science for Business</title>
+			<authors>Tom Fawcett and Foster Provost</authors>
+			<publisher>O’Reilly</publisher>
+			<publicationdate>2013</publicationdate>
+			<url>None</url>
+		</book>
+
+		<book>
+			<title>Automated Data Collection with R: A Practical Guide to Web Scraping and Text Mining</title>
+			<authors>Simon Munzert, Christian Rubba, Peter Meißner, and Dominic Nyhuis</authors>
+			<publisher>Wiley</publisher>
+			<publicationdate>2015</publicationdate>
+			<url>http://www.r-datacollection.com/errata/errata.pdf</url>
+		</book>
+		
+		<book>
+			<title>Feature Engineering and Selection: A Practical Approach for Predictive Models</title>
+			<authors>Max Kuhn and Kjell Johnson</authors>
+			<publisher>Chapman and Hall/CRC Data Science Series, 1st Edition</publisher>
+			<publicationdate>2019</publicationdate>
+			<url>ttps://bookdown.org/max/FES/intro-intro.html</url>
+		</book>
+	</references>
+</body>
+</html>
