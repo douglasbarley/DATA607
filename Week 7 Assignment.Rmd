@@ -1,0 +1,52 @@
+---
+title: "Assignment 7"
+author: "Douglas Barley"
+date: "10/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(XML)
+library(RCurl)
+library(rlist)
+library(jsonlite)
+```
+
+## Creation of three file types: HTML, XML, JSON
+
+Using the five required textbooks for this course, there are three files respectively in HMTL, XML and JSON format in my GitHub repo <a href="https://github.com/douglasbarley/DATA607>here<a>. The files are respectively named "FiveBooksHTML.html", "FiveBooksXML.xml", and "FiveBooksJSON.json".
+
+
+## Reading the files into R dataframes
+
+Each file is read into a dataframe.
+
+I could not figure out how to read an HTML file into R.
+
+```{r }
+
+HTML_URL <- "https://raw.githubusercontent.com/douglasbarley/DATA607/master/FiveBooksHTML.html"
+
+# What to do???
+  
+```
+
+Nor could I figure out how to read an XML file into R.
+
+```{r }
+XML_URL <- "https://raw.githubusercontent.com/douglasbarley/DATA607/master/FiveBooksXML.xml"
+
+# What to do???
+
+```
+
+I could figure out how to read a JSON file into R.
+
+```{r }
+JSON_URL <- "https://raw.githubusercontent.com/douglasbarley/DATA607/master/FiveBooksJSON.json"
+
+df_JSON <- fromJSON(JSON_URL)
+df_JSON
+```
+
