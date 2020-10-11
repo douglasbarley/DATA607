@@ -1,0 +1,9 @@
+
+{	
+	"title": ["R for Data Science","Text Mining with R: A Tidy Approach","Data Science for Business","Automated Data Collection with R: A Practical Guide to Web Scraping and Text Mining","Feature Engineering and Selection: A Practical Approach for Predictive Models"],
+	"authors": ["Garrett Grolemund and Hadley Wickham","Julia Silge and David Robinson","Tom Fawcett and Foster Provost","Simon Munzert, Christian Rubba, Peter Meißner, and Dominic Nyhuis","Max Kuhn and Kjell Johnson"],
+	"publisher": ["O’Reilly","O’Reilly","O’Reilly","Wiley","Chapman and Hall/CRC Data Science Series, 1st Edition"],
+	"publicationdate": ["2017","2017","2013","2015","2019"],
+	"url": ["/r4ds.had.co.nz/","None","None","http://www.r-datacollection.com/errata/errata.pdf","https://bookdown.org/max/FES/intro-intro.html"]
+}
+
