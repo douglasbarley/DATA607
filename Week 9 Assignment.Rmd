@@ -1,0 +1,69 @@
+---
+title: "Assignment 9"
+author: "Douglas Barley"
+date: "10/24/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+```
+
+## Approach and reasoning
+
+After signing up for my API key with the New York Times, I decided that I needed to explore what kinds of lists were available for reading into R. So I started with a top level list of lists as a good place to explore the types of lists available.
+
+## Reading the file into an R dataframe
+
+The raw JSON file of lists is read into a dataframe, and we can then look at the status of the API call.
+```{r }
+listsAPI <- GET("https://api.nytimes.com/svc/books/v2/lists/overview.json?api-key=xikY86V9fJdiqGfYJAzKuo39jVKgZj4W", verbose())
+
+http_status(listsAPI)
+
+```
+
+With a Success code of 200 the file was successfully read into a dataframe, but it is still difficult to read/interpret in plain language due to the structure of the file.  So I wanted to extract the contents from the URL call as raw text.
+```{r }
+lists <- content(listsAPI, "text", encoding='UTF-8')
+```
+
+And then insert the text into an R dataframe.
+```{r }
+liststext <- fromJSON(lists, flatten = TRUE)
+lists_df <- as.data.frame(liststext)
+head(lists_df)
+```
+
+But there are 17 columns, not all of which are necessary. So I decided to look at only the core information in the data, which I considered to be the list names and descriptions of each type of list.
+```{r}
+lists_df2 <- subset(lists_df, select = c(results.lists.list_name, results.lists.display_name))
+head(lists_df2)
+```
+
+With a nice list of the types of lists available, I wanted to retrieve the top 10 hardcover fiction titles. So I used the API for the Hardcover Fiction list and extracted it into R.
+
+## Retrieve the Hardcover Fiction list
+
+```{r}
+hardcoverAPI <- GET("https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=xikY86V9fJdiqGfYJAzKuo39jVKgZj4W&author=Obama", verbose())
+
+http_status(hardcoverAPI)
+```
+
+I extracted the raw text and saved it into a data frame, and clean it up to just list the hardcover fiction books by rank, as well as showing the author, publisher and 13-digit ISBN.
+```{r}
+hardcover <- content(hardcoverAPI, "text", encoding='UTF-8')
+hardcovertext <-fromJSON(hardcover, flatten = TRUE)
+hardcover_df <- as.data.frame(hardcovertext$results$books)
+hardcover_df <- subset(hardcover_df, select = c(rank, title, contributor, publisher, primary_isbn13))
+hardcover_df
+
+```
+
+## conclusion
+
+Reading data from the web using an API is an interesting process. Using an API to extract data is like signing a contract in terms of how the data will be transferred.  It appears that the data is formatted in either JSON or XML, so understanding the nodes where the data that you want is stored is still a very important aspect of the entire process. It helps to be able to pause and examine the data in whatever format it is in, so that you can familiarize yourself with where exactly the data that you want is located inside the downloaded package of data. Overall though, it is worth the effort to be able to extract data from authoritative sources by using and API.
