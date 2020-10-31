@@ -1,0 +1,394 @@
+---
+title: "DATA607 - Week 10 Assignment"
+author: "Douglas Barley"
+date: "10/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Re-create the base analysis
+
+The assignment is to re-create the R code from Chapter 2 of the textbook: 
+
+Silge, Julia, and David Robinson. 2017. _Text Mining with R: A Tidy Approach_. O’Reilly. <a href="https://www.tidytextmining.com/sentiment.html">https://www.tidytextmining.com/sentiment.html</a>.
+
+Here is a re-creation of that code.
+
+### The `sentiments` dataset
+
+Import three sentiment lexicons. The first is the "afinn" lexicon,
+```{r message = FALSE}
+library(tidytext)
+
+get_sentiments("afinn")
+```
+Second is the "bing" lexicon.
+```{r}
+get_sentiments("bing")
+```
+
+The third is the "nrc" dataset, published by Saif M. Mohammad and Peter Turney. (2013), ``Crowdsourcing a Word-Emotion Association Lexicon.'' Computational Intelligence, 29(3): 436-465.
+```{r message = FALSE}
+get_sentiments("nrc")
+
+```
+
+### Inner Joins for Sentiment Analysis
+
+Create a dataset that includes the works of Jane Austen.
+```{r message = FALSE}
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+
+tidy_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]",
+      ignore_case = TRUE
+    )))
+  ) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+
+Create a dataset containing only the "joy" words from the "nrc" lexicon, and use
+the new lexicon dataset to evaluate the work "Emma", counting the "joy" words in it.
+```{r message = FALSE}
+nrc_joy <- get_sentiments("nrc") %>%
+  filter(sentiment == "joy")
+
+tidy_books %>%
+  filter(book == "Emma") %>%
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE)
+```
+
+Compare the sentiment across all of the works of Jane Austen by joining to the 
+"bing" lexicon, chopping the works into 80-line indexed sections, counting the
+positive and negative sentiments within each section, and taking the difference
+of the sentiments to derive a net sentiment for each section.
+```{r message = FALSE}
+library(tidyr)
+
+jane_austen_sentiment <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+head(jane_austen_sentiment)
+```
+
+Plot the sentiments for each work.
+```{r}
+library(ggplot2)
+
+ggplot(jane_austen_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x")
+```
+
+Compare how the three different lexicons perform against the work _Pride and Prejudice_.
+```{r message = FALSE}
+# filter Jane Austin's works for Pride & Prejudice
+pride_prejudice <- tidy_books %>%
+  filter(book == "Pride & Prejudice")
+
+# join to the afinn lexicon
+afinn <- pride_prejudice %>%
+  inner_join(get_sentiments("afinn")) %>%
+  group_by(index = linenumber %/% 80) %>%
+  summarise(sentiment = sum(value)) %>%
+  mutate(method = "AFINN")
+
+head(afinn)
+
+# join to the bing and nrc lexicons
+bing_and_nrc <- bind_rows(
+  pride_prejudice %>%
+    inner_join(get_sentiments("bing")) %>%
+    mutate(method = "Bing et al."),
+  pride_prejudice %>%
+    inner_join(get_sentiments("nrc") %>%
+      filter(sentiment %in% c(
+        "positive",
+        "negative"
+      ))) %>%
+    mutate(method = "NRC")
+) %>%
+  count(method, index = linenumber %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+head(bing_and_nrc)
+```
+### The Three Sentiment Lexicons
+
+Visualize the net sentiment trend based on the lexicon used to analyze it.
+```{r}
+bind_rows(
+  afinn,
+  bing_and_nrc
+) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+Compare the overall sentiment levels in two of the lexicons ("nrc" and "bing").
+```{r}
+nrc_sentiment <- get_sentiments("nrc") %>%
+  filter(sentiment %in% c(
+    "positive",
+    "negative"
+  )) %>%
+  count(sentiment)%>%
+  mutate(lexicon = "nrc")
+
+bing_sentiment <- get_sentiments("bing") %>%
+  count(sentiment)%>%
+  mutate(lexicon = "bing")
+
+lexicon_compare <- bind_rows(nrc_sentiment
+      ,bing_sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(pct_neg = negative/(negative + positive),
+         pct_pos = positive/(negative + positive))
+lexicon_compare
+```
+
+### Positive and Negative skew in the Lexicons
+
+Identify the most common words in the "bing" lexicon and identify which sentiment
+defines the word. Graph the top 10 results for each sentiment.
+```{r message = FALSE}
+bing_word_counts <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(
+    y = "Contribution to sentiment",
+    x = NULL
+  ) +
+  coord_flip()
+```
+
+Add the word 'miss' to the lexicon as a custom sentiment.
+```{r}
+custom_stop_words <- bind_rows(
+  tibble(
+    word = c("miss"),
+    lexicon = c("custom")
+  ),
+  stop_words
+)
+
+custom_stop_words
+```
+
+### Using Wordclouds
+
+Use Wordclouds with the works of Jane Austen.
+```{r message = FALSE}
+library(wordcloud)
+library(tidytext)
+
+tidy_books %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+Create a sentiment analysis Wordcloud using `comparison.cloud()`. Negative words
+are in darker font, positive words are in lighter font.
+```{r message = FALSE}
+library(reshape2)
+
+tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(
+    colors = c("gray20", "gray80"),
+    max.words = 100
+  )
+```
+### Looking Beyond Words
+
+Tokenize at the sentence level instead of the word level.
+```{r}
+PandP_sentences <- austen_books() %>%
+  filter(book == "Pride & Prejudice") %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]",
+      ignore_case = TRUE
+    )))
+  ) %>%
+  ungroup() %>%
+  unnest_tokens(sentence, text, token = "sentences")
+```
+
+Tokenize at the chapter level.
+```{r message = FALSE}
+austen_chapters <- austen_books() %>%
+  group_by(book) %>%
+  unnest_tokens(chapter, text,
+    token = "regex",
+    pattern = "Chapter|CHAPTER [\\dIVXLC]"
+  ) %>%
+  ungroup()
+
+austen_chapters %>%
+  group_by(book) %>%
+  summarise(chapters = n())
+```
+
+Find the number and ratio of negative words in the most negative chapter of each book.
+```{r message = FALSE}
+bingnegative <- get_sentiments("bing") %>%
+  filter(sentiment == "negative")
+
+wordcounts <- tidy_books %>%
+  group_by(book, chapter) %>%
+  summarize(words = n())
+
+tidy_books %>%
+  semi_join(bingnegative) %>%
+  group_by(book, chapter) %>%
+  summarize(negativewords = n()) %>%
+  left_join(wordcounts, by = c("book", "chapter")) %>%
+  mutate(ratio = negativewords / words) %>%
+  filter(chapter != 0) %>%
+  top_n(1) %>%
+  ungroup()
+```
+
+## Using a different corpus and lexicon
+
+<a href="https://www.gutenberg.org/">Project Gutenberg</a> offer readers (and researchers) the full text of over 60,000 eBooks for free. For the purposes of this assginment, I chose a sample of the works of <a href="https://www.gutenberg.org/ebooks/author/37">Charles Dickens</a>.
+
+### new corpus
+
+Download the sampling of books by Charles Dickens from the Project Gutenberg website.
+```{r messsage = FALSE}
+library(gutenbergr)
+
+dickens786 <- gutenberg_download(c(786)) %>%
+    mutate(book = "Hard Times")
+dickens1400 <- gutenberg_download(c(1400)) %>%
+    mutate(book = "Great Expectations")
+dickens730 <- gutenberg_download(c(730)) %>%
+    mutate(book = "Oliver Twist")
+dickens766 <- gutenberg_download(c(766)) %>%
+    mutate(book = "David Copperfield")
+dickens1023 <- gutenberg_download(c(1023)) %>%
+    mutate(book = "Bleak House")
+dickens564 <- gutenberg_download(c(564)) %>%
+    mutate(book = "The Mystery of Edwin Drood")
+
+dickens <- bind_rows(dickens786, dickens1400, dickens730, dickens766, dickens1023, dickens564)
+dickens <-  subset(dickens, select = c(text,book))
+```
+
+Index the books by chapter and line number and tokenize the words into a tidy dataset.
+```{r message = FALSE}
+
+tidy_dickens <- dickens %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]",
+      ignore_case = TRUE
+    )))
+  ) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+
+Remove the stop words from the `tidy_dickens` dataset, then identify the most common words in the works of Dickens by wordcount.
+```{r message = FALSE}
+data(stop_words)
+
+tidy_dickens <- tidy_dickens %>%
+  anti_join(stop_words)
+
+tidy_dickens %>%
+  count(word, sort = TRUE)
+```
+
+### new lexicon
+
+Identify a new lexicon for sentiment analysis; the `loughran` package is part of the `tidytext` package.
+```{r message = FALSE}
+get_sentiments("loughran")
+```
+
+Compare the sentiment across all of the works of Dickens by joining to the “loughran” lexicon, chopping the works into 80-line indexed sections, counting the positive and negative sentiments within each section, and taking the difference of the sentiments to derive a net sentiment for each section.
+```{r message = FALSE}
+dickens_sentiment <- tidy_dickens %>%
+  inner_join(get_sentiments("loughran")) %>%
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative - constraining - litigious - uncertainty)
+
+head(dickens_sentiment)
+```
+
+The loughran sentiment index appears to have six categories of words:  constraining, litigious, negative, positive, superfluous, and uncertainty. All of the categories seem to be negative with the exception of "positive", which could potentially skew the overall sentiment heavily into the negative.
+
+Let's look further into the details of the sentiment lexicon itself to see what might be happening.
+```{r message = FALSE}
+loughran_word_counts <- tidy_dickens %>%
+  inner_join(get_sentiments("loughran")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+loughran_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(
+    y = "Contribution to sentiment",
+    x = NULL
+  ) +
+  coord_flip()
+```
+
+There appear to be words such as "obliged" and "committed" in the constraining category that could have had positive meanings at the time Dickens wrote his works. For example, "I am much obliged, madam." and "I have committed all of my love to you" that could be construed as positive.  Likewise, the words "justice" and "consent" in the legal category could be used in Dickens' work in the context of "Justice has been done" and "I consent to grant you the hand of my daughter in marriage." These would have been construed at the time of their use as positive phrases.
+
+Plot the sentiments for each work.
+```{r}
+ggplot(dickens_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x")
+```
+
+As expected through the examination of the loughran lexicon, it appears that most of the works of Dickens result in an overall negative sentiment in this analysis.
+
+## Conclusion
+
+The process of sentiment analysis is not a straightforward one. The choice of which sentiment lexicon to use in the context of a specific analysis is vital to the success or failure of the sentiment analysis. Using the wrong lexicon for the context can result in disastrous conclusions. So the moral of this story is:  choose your lexicons wisely!
+
+Overall for this assignment, I found the NRC lexicon to be the most useful, since it was the one most balanced between positive and negative words.
+
