@@ -1,0 +1,83 @@
+---
+title: "DATA607 - Week 11 Assignment : Recommender Systems"
+author: "Douglas Barley"
+date: "11/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## The Assignment
+
+The assignment is to analyze an interesting, existing Recommender system by:
+
+- Performing a Scenario Design analysis.
+- Attempting to reverse engineer the site in terms of concept and construct using the scenario analysis process.
+- Include specific recommendations about how to improve the site's recommendation capabilities going forward.
+
+## Amazon.com
+
+Several of the better known Recommender systems are found embedded in online retailer websites. One of the most used is Amazon.com, where you can find just about anything that you want to purchase. Fortunately, the recommender engines can not only help you locate what you want quickly, but you will also be presented with more options to purchase items based on what other people searching for the same or similar items also purchased.
+
+Every time you click on an item in the search results provided by Amazon.com the company records what you clicked on, and the more you click on items on the website the more you are training their recommender systems what types of items you are interested in at least viewing, and perhaps purchasing.
+
+Once you are finished shopping on Amazon's website, you will receive follow-up e-mails and/or texts suggesting additional items that you might like to return to the website to purchase, based on the items that you did actually purchase or at least viewed, since viewing = liking on their website.
+
+## Scenario Analysis of Amazon.com
+
+The questions to answer in the scenario analysis are:
+
+- Who are the target users of the site?
+
+    -- The target users on Amazon's website are people interested in having the
+      convenience of shopping from the comfort of their personal electronic devices
+      any time of the day or night, every day of the year. 
+
+    -- They are people who may not have a lot of time to go to a bricks and mortar
+      store to look for items that they may not find in those types of stores, but
+      need or want, and are willing to pay a premium for having the specific item(s)
+      that they desire delivered directly to their doorstep for a shipping fee. 
+
+    -- They may also be shoppers looking for a hard-to-find item that someone in
+      Amazon's network of sellers might have available for sale.
+
+
+- What are their key goals?
+
+    An Amazon shopper's key goals are:
+
+    -- to locate the item(s) that they want quickly and easily with the assistance of a
+      robust online search engine.
+    
+    -- to purchase the desired quantity of the item(s) with a guarantee that the item(s)
+      will be delivered to their doorstep as quickly and efficiently as they require.
+      
+    -- to have the ability to track their items while they are in transit to their final destination.
+    
+    -- to have access to customer service to help resolve any issues that occur between
+      the purchase of the item(s) and the final delivery thereof to their desired location. 
+
+- How can the site (i.e. recommender engine) help the users accomplish their goals.
+
+    Amazon can help the users accomplish their goals by:
+    
+    -- providing an easy interface where a customer can search for, virtually "examine" or review,
+      select, purchase and track item(s) sold by a wide variety of sellers.
+      
+    -- tracking a user's activity while on the site in order to capture and classify that user's
+      clickthrough behavior in order to rank and recommend additional upsales to the customer
+      based on what they like (i.e. click) and really like (i.e. purchase).
+      
+    -- provide the best customer service possible to manage the customer's expectations appropriately
+      and identify acceptable remediations whenever something goes sideways in a transaction.
+      rank, and recommend additional objects
+      
+## Recommendations to improve Amazon's Recommendations
+
+In my personal use of Amazon's website I have purchased a wide variety of items. I purchase textbooks for my coursework in Data Science, gifts for my wife, my daughter and my granddaughter for their birthdays and for holidays, and items to prepare for the arrival of my second granddaughter this coming winter. As such, I receive recommendations from Amazon for books on Data Science, women's clothing, robo-vaccuums, items that only teenagers could be interested in having, small children's toys, and baby blankets. 
+
+For example, my two most recent purchases are a Statistics textbook and a toddler leash for my daughter to use with my as yet unborn granddaughter, and Amazon has correctly attributed all of my purchases to me because I made them. However, the end users of the purchases are predominantly not me. So one improvement that I see in the process would be to note on every item purchased whether or not the item is going to be used and "owned" by the purchaser, who then may want to see more of similar items, or by another person, who is unlikely to login to the purchaser's account...at least until she knows her A-B-Cs.
+
